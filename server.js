@@ -22,21 +22,22 @@ const CLIENT_URL = process.env.CLIENT_URL || 'http://localhost:5173';
 // ==========================================
 
 // CORS Configuration
-app.use(
-  cors({
-    origin: (origin, callback) => {
-      // Allow requests with no origin (like mobile apps, curl, Postman) or matching client
-      if (!origin || origin === CLIENT_URL || origin.startsWith('http://localhost:')) {
-        callback(null, true);
-      } else {
-        callback(null, true); // Permissive for development
-      }
-    },
-    credentials: true,
-    methods: ['GET', 'POST', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
-  })
-);
+const corsOptions = {
+  origin: (origin, callback) => {
+    // Allow requests with no origin (like mobile apps, curl, Postman) or matching client
+    if (!origin || origin === CLIENT_URL || origin.startsWith('http://localhost:') || origin.endsWith('github.io')) {
+      callback(null, true);
+    } else {
+      callback(null, true); // Permissive for production cross-origin
+    }
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+};
+
+app.use(cors(corsOptions));
+app.options('*', cors(corsOptions));
 
 // Body Parsers
 app.use(express.json({ limit: '1mb' }));
@@ -66,8 +67,8 @@ app.use(async (req, res, next) => {
 // ROUTES
 // ==========================================
 
-// Health Check
-app.get('/api/health', (req, res) => {
+// Health Check (support both /api/health and /health)
+app.get(['/api/health', '/health'], (req, res) => {
   const dbState = mongoose.connection.readyState;
   const dbStatus =
     dbState === 1
@@ -86,14 +87,21 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-// Mount Resource Routes
+// Mount Resource Routes (both /api/xxx and /xxx for robust routing)
 app.use('/api/contact', contactRouter);
-app.use('/api/projects', projectsRouter);
-app.use('/api/skills', skillsRouter);
-app.use('/api/experience', experienceRouter);
+app.use('/contact', contactRouter);
 
-// Root Endpoint
-app.get('/', (req, res) => {
+app.use('/api/projects', projectsRouter);
+app.use('/projects', projectsRouter);
+
+app.use('/api/skills', skillsRouter);
+app.use('/skills', skillsRouter);
+
+app.use('/api/experience', experienceRouter);
+app.use('/experience', experienceRouter);
+
+// Root Endpoint (support both / and /api)
+app.get(['/', '/api'], (req, res) => {
   res.json({
     message: 'NABEEL DHILLON // PORTFOLIO API SERVER',
     database: mongoose.connection.readyState === 1 ? 'MONGODB_CONNECTED' : 'MONGODB_DISCONNECTED',
