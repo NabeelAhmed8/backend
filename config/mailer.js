@@ -9,19 +9,33 @@ const isSmtpConfigured =
   Boolean(process.env.SMTP_USER && process.env.SMTP_PASS);
 
 if (isSmtpConfigured) {
-  transporter = nodemailer.createTransport({
-    host: process.env.SMTP_HOST || 'smtp-mail.outlook.com',
-    port: parseInt(process.env.SMTP_PORT || '587', 10),
-    secure: false, // port 587 uses STARTTLS
-    auth: {
-      user: process.env.SMTP_USER,
-      pass: process.env.SMTP_PASS,
-    },
-    tls: {
-      ciphers: 'SSLv3',
-      rejectUnauthorized: false,
-    },
-  });
+  const isGmail =
+    process.env.SMTP_HOST?.includes('gmail') ||
+    process.env.SMTP_USER?.includes('@gmail.com');
+
+  transporter = nodemailer.createTransport(
+    isGmail
+      ? {
+          service: 'gmail',
+          auth: {
+            user: process.env.SMTP_USER,
+            pass: process.env.SMTP_PASS,
+          },
+        }
+      : {
+          host: process.env.SMTP_HOST || 'smtp-mail.outlook.com',
+          port: parseInt(process.env.SMTP_PORT || '587', 10),
+          secure: false,
+          auth: {
+            user: process.env.SMTP_USER,
+            pass: process.env.SMTP_PASS,
+          },
+          tls: {
+            ciphers: 'SSLv3',
+            rejectUnauthorized: false,
+          },
+        }
+  );
 }
 
 /**
@@ -47,10 +61,10 @@ export async function sendContactNotification({ name, email, message }) {
   }
 
   const mailOptions = {
-    from: `"Portfolio Dispatch" <${process.env.SMTP_USER}>`,
+    from: `"Portfolio" <${process.env.SMTP_USER}>`,
     to: receiver,
     replyTo: email,
-    subject: `[Portfolio Dispatch] New Message from ${name}`,
+    subject: `New Message from ${name}`,
     text: `You received a new inquiry from your portfolio website:
 
 Name: ${name}
@@ -62,7 +76,7 @@ ${message}
 `,
     html: `
       <div style="font-family: monospace, sans-serif; background-color: #000; color: #fff; padding: 24px; border: 2px solid #fff;">
-        <h2 style="color: #fff; border-bottom: 2px solid #fff; padding-bottom: 12px; margin-top: 0;">NEW PORTFOLIO DISPATCH</h2>
+        <h2 style="color: #fff; border-bottom: 2px solid #fff; padding-bottom: 12px; margin-top: 0;">PORTFOLIO</h2>
         <p><strong>From:</strong> ${name} &lt;<a href="mailto:${email}" style="color: #fff;">${email}</a>&gt;</p>
         <p><strong>Timestamp:</strong> ${new Date().toLocaleString()}</p>
         <div style="border: 1px solid #444; padding: 16px; background-color: #111; margin-top: 16px;">
