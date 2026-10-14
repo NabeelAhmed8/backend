@@ -76,7 +76,7 @@ export async function connectDB() {
     await autoSeedDatabase();
   } catch (error) {
     console.error('[MONGODB CONNECTION ERROR]', error.message);
-    console.warn('[MONGODB] Running in fallback mode. Ensure MongoDB service is running.');
+    console.error('[MONGODB] Could not connect to database. Ensure MongoDB service is running.');
   }
 }
 

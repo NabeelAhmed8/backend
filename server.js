@@ -64,10 +64,10 @@ app.get('/api/health', (req, res) => {
       ? 'MONGODB_CONNECTED'
       : dbState === 2
       ? 'MONGODB_CONNECTING'
-      : 'STANDALONE_FALLBACK';
+      : 'MONGODB_DISCONNECTED';
 
   res.json({
-    status: 'OPERATIONAL',
+    status: dbState === 1 ? 'OPERATIONAL' : 'DEGRADED',
     database: dbStatus,
     dbHost: mongoose.connection.host || 'local',
     uptime: Math.floor(process.uptime()),
@@ -86,7 +86,7 @@ app.use('/api/experience', experienceRouter);
 app.get('/', (req, res) => {
   res.json({
     message: 'NABEEL DHILLON // PORTFOLIO API SERVER',
-    database: mongoose.connection.readyState === 1 ? 'MONGODB_CONNECTED' : 'STANDALONE_FALLBACK',
+    database: mongoose.connection.readyState === 1 ? 'MONGODB_CONNECTED' : 'MONGODB_DISCONNECTED',
     endpoints: {
       health: 'GET /api/health',
       contact: 'POST /api/contact',
