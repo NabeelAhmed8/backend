@@ -11,7 +11,7 @@ import experienceRouter from './routes/experience.js';
 dotenv.config();
 
 // Connect to MongoDB
-connectDB();
+connectDB().catch((err) => console.error('[INIT DB NOTICE]', err.message));
 
 const app = express();
 const PORT = process.env.PORT || 5005;
@@ -49,10 +49,15 @@ app.use((req, res, next) => {
     const duration = Date.now() - start;
     console.log(`[API ${req.method}] ${req.originalUrl} — ${res.statusCode} (${duration}ms)`);
   });
+  next();
+});
+
 // Ensure MongoDB connection in Serverless environments (cold start resilience)
 app.use(async (req, res, next) => {
   if (mongoose.connection.readyState !== 1) {
-    await connectDB();
+    try {
+      await connectDB();
+    } catch (_) {}
   }
   next();
 });
