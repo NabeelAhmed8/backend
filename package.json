@@ -1,0 +1,26 @@
+{
+  "name": "portfolio-backend",
+  "version": "1.0.0",
+  "description": "Brutalist portfolio backend API server for Nabeel Ahmed Dhillon",
+  "type": "module",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "mongoose": "^9.11.2",
+    "nodemailer": "^6.10.0"
+  },
+  "keywords": [
+    "portfolio",
+    "backend",
+    "express",
+    "api"
+  ],
+  "author": "Nabeel Ahmed Dhillon",
+  "license": "ISC"
+}

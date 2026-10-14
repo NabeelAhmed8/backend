@@ -1,0 +1,16 @@
+[
+  {
+    "id": "exp-01",
+    "role": "Junior Full Stack Web Developer",
+    "category": "dev",
+    "company": "Full Stack Web Development & Engineering",
+    "period": "1+ Year Experience (2024 — Present)",
+    "location": "Multan, Pakistan / Remote",
+    "points": [
+      "Engineered end-to-end responsive web applications using HTML, CSS, JavaScript, Bootstrap, Tailwind CSS, React, and React Vite.",
+      "Architected backend services, authentication flows, and RESTful APIs utilizing PHP and Laravel framework.",
+      "Designed, maintained, and queried database systems using MongoDB and MySQL for persistent data storage.",
+      "Developed modular, scalable component architectures ensuring clean code, fast load times, and cross-browser reliability."
+    ]
+  }
+]

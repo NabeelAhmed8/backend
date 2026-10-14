@@ -1,0 +1,26 @@
+[
+  {
+    "code": "01",
+    "label": "Core Languages & Web",
+    "summary": "Foundational web standards, language runtimes, and semantic structure.",
+    "skills": ["HTML5 Semantic", "CSS3 Spec", "JavaScript ES6+", "PHP", "REST APIs", "DOM Manipulation"]
+  },
+  {
+    "code": "02",
+    "label": "Frameworks & Libraries",
+    "summary": "Full-stack application engines, reactive state loops, and styling frameworks.",
+    "skills": ["React 19", "React Vite", "Laravel", "Tailwind CSS", "Bootstrap 5"]
+  },
+  {
+    "code": "03",
+    "label": "Databases & Backend",
+    "summary": "Relational and NoSQL persistence layers, ORMs, and schema architecture.",
+    "skills": ["MongoDB", "MySQL", "Mongoose ODM", "Eloquent ORM", "Schema Design", "CRUD Architecture"]
+  },
+  {
+    "code": "04",
+    "label": "Architecture & Tooling",
+    "summary": "Modern deployment workflows, component composition, and responsive engineering.",
+    "skills": ["Full Stack Architecture", "Git & GitHub", "Component Systems", "Responsive Grids", "DevTools"]
+  }
+]
