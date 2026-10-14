@@ -49,6 +49,11 @@ app.use((req, res, next) => {
     const duration = Date.now() - start;
     console.log(`[API ${req.method}] ${req.originalUrl} — ${res.statusCode} (${duration}ms)`);
   });
+// Ensure MongoDB connection in Serverless environments (cold start resilience)
+app.use(async (req, res, next) => {
+  if (mongoose.connection.readyState !== 1) {
+    await connectDB();
+  }
   next();
 });
 
@@ -117,15 +122,17 @@ app.use((err, req, res, _next) => {
 });
 
 // ==========================================
-// START SERVER
+// START SERVER (Localhost / Traditional Host)
 // ==========================================
-app.listen(PORT, () => {
-  console.log('====================================================');
-  console.log(`[SERVER ACTIVE] Running on http://localhost:${PORT}`);
-  console.log(`[HEALTH CHECK]  http://localhost:${PORT}/api/health`);
-  console.log(`[CLIENT URL]    ${CLIENT_URL}`);
-  console.log(`[MONGODB URI]   ${process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/portfolio'}`);
-  console.log('====================================================');
-});
+if (!process.env.VERCEL) {
+  app.listen(PORT, () => {
+    console.log('====================================================');
+    console.log(`[SERVER ACTIVE] Running on http://localhost:${PORT}`);
+    console.log(`[HEALTH CHECK]  http://localhost:${PORT}/api/health`);
+    console.log(`[CLIENT URL]    ${CLIENT_URL}`);
+    console.log(`[MONGODB URI]   ${process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/portfolio'}`);
+    console.log('====================================================');
+  });
+}
 
 export default app;
