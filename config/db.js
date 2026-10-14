@@ -1,28 +1,46 @@
 import mongoose from 'mongoose';
 
+let cached = global.mongoose;
+
+if (!cached) {
+  cached = global.mongoose = { conn: null, promise: null };
+}
+
 /**
- * Connect to MongoDB database
+ * Connect to MongoDB database with resilient serverless caching
  */
 export async function connectDB() {
-  if (mongoose.connection.readyState >= 1) {
-    return;
+  if (cached.conn && mongoose.connection.readyState === 1) {
+    return cached.conn;
   }
 
   const uri = process.env.MONGODB_URI;
 
   if (!uri) {
     console.warn('[MONGODB] MONGODB_URI is not configured in environment variables.');
-    return;
+    return null;
+  }
+
+  if (!cached.promise) {
+    const opts = {
+      bufferCommands: false,
+      serverSelectionTimeoutMS: 10000,
+      connectTimeoutMS: 10000,
+    };
+
+    cached.promise = mongoose.connect(uri, opts).then((conn) => {
+      console.log(`[MONGODB CONNECTED] Host: ${conn.connection.host} | DB: ${conn.connection.name}`);
+      return conn;
+    });
   }
 
   try {
-    const conn = await mongoose.connect(uri, {
-      serverSelectionTimeoutMS: 5000,
-      connectTimeoutMS: 5000,
-    });
-    console.log(`[MONGODB CONNECTED] Host: ${conn.connection.host} | DB: ${conn.connection.name}`);
+    cached.conn = await cached.promise;
+    return cached.conn;
   } catch (error) {
+    cached.promise = null;
     console.error('[MONGODB CONNECTION ERROR]', error.message);
+    return null;
   }
 }
 
