@@ -1,42 +1,9 @@
 import express from 'express';
 import mongoose from 'mongoose';
-import fs from 'fs/promises';
-import path from 'path';
-import { fileURLToPath } from 'url';
 import { sendContactNotification } from '../config/mailer.js';
 import Message from '../models/Message.js';
 
 const router = express.Router();
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const messagesFilePath = path.join(__dirname, '../data/messages.json');
-
-/**
- * Helper to read existing messages from JSON backup storage
- */
-async function getStoredMessages() {
-  try {
-    const raw = await fs.readFile(messagesFilePath, 'utf-8');
-    return JSON.parse(raw);
-  } catch (err) {
-    if (err.code === 'ENOENT') {
-      await fs.writeFile(messagesFilePath, '[]', 'utf-8');
-      return [];
-    }
-    throw err;
-  }
-}
-
-/**
- * Helper to save messages to JSON backup storage
- */
-async function saveMessages(messages) {
-  try {
-    await fs.writeFile(messagesFilePath, JSON.stringify(messages, null, 2), 'utf-8');
-  } catch (err) {
-    console.error('[MESSAGES BACKUP ERROR]', err.message);
-  }
-}
 
 /**
  * POST /api/contact
@@ -78,16 +45,16 @@ router.post('/', async (req, res) => {
       ip: req.ip || req.connection?.remoteAddress || 'Unknown',
     };
 
-    // Store in MongoDB if connected
-    if (mongoose.connection.readyState === 1) {
-      const dbMessage = new Message(messageData);
-      await dbMessage.save();
+    // Store strictly in MongoDB
+    if (mongoose.connection.readyState !== 1) {
+      return res.status(503).json({
+        success: false,
+        error: 'Database service is currently unavailable. Transmission not stored.',
+      });
     }
 
-    // Always keep backup JSON file synchronized
-    const messages = await getStoredMessages();
-    messages.push(messageData);
-    await saveMessages(messages);
+    const dbMessage = new Message(messageData);
+    await dbMessage.save();
 
     // Send email notification (real SMTP or logged simulation)
     const mailResult = await sendContactNotification({
@@ -100,8 +67,8 @@ router.post('/', async (req, res) => {
 
     return res.status(201).json({
       success: true,
-      message: 'Transmission received and logged successfully.',
-      source: mongoose.connection.readyState === 1 ? 'mongodb' : 'json-backup',
+      message: 'Transmission received and saved to MongoDB.',
+      source: 'mongodb',
       data: {
         id: messageData.id,
         timestamp: messageData.timestamp,
@@ -119,24 +86,21 @@ router.post('/', async (req, res) => {
 
 /**
  * GET /api/contact/messages
- * View all received inquiries from MongoDB (or JSON backup)
+ * View all received inquiries strictly from MongoDB
  */
 router.get('/messages', async (req, res) => {
   try {
-    if (mongoose.connection.readyState === 1) {
-      const messages = await Message.find().sort({ timestamp: -1 }).lean();
-      return res.json({
-        success: true,
-        source: 'mongodb',
-        count: messages.length,
-        data: messages,
+    if (mongoose.connection.readyState !== 1) {
+      return res.status(503).json({
+        success: false,
+        error: 'Database service is currently unavailable.',
       });
     }
 
-    const messages = await getStoredMessages();
+    const messages = await Message.find().sort({ timestamp: -1 }).lean();
     return res.json({
       success: true,
-      source: 'json-fallback',
+      source: 'mongodb',
       count: messages.length,
       data: messages,
     });
@@ -144,7 +108,7 @@ router.get('/messages', async (req, res) => {
     console.error('[MESSAGES GET ERROR]', error);
     return res.status(500).json({
       success: false,
-      error: 'Failed to retrieve stored transmissions.',
+      error: 'Failed to retrieve stored transmissions from database.',
     });
   }
 });

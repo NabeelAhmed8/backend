@@ -6,18 +6,20 @@ dotenv.config();
 let transporter = null;
 
 const isSmtpConfigured =
-  process.env.SMTP_USER &&
-  process.env.SMTP_PASS &&
-  process.env.SMTP_HOST;
+  Boolean(process.env.SMTP_USER && process.env.SMTP_PASS);
 
 if (isSmtpConfigured) {
   transporter = nodemailer.createTransport({
-    host: process.env.SMTP_HOST,
+    host: process.env.SMTP_HOST || 'smtp-mail.outlook.com',
     port: parseInt(process.env.SMTP_PORT || '587', 10),
-    secure: process.env.SMTP_PORT === '465',
+    secure: false, // port 587 uses STARTTLS
     auth: {
       user: process.env.SMTP_USER,
       pass: process.env.SMTP_PASS,
+    },
+    tls: {
+      ciphers: 'SSLv3',
+      rejectUnauthorized: false,
     },
   });
 }
@@ -40,7 +42,7 @@ export async function sendContactNotification({ name, email, message }) {
     return {
       success: true,
       mode: 'simulation',
-      note: 'SMTP not configured in .env; message logged and persisted to data/messages.json',
+      note: 'SMTP not configured in .env; message logged and persisted to MongoDB database',
     };
   }
 

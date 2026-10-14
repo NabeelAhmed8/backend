@@ -215,4 +215,65 @@ router.post('/', async (req, res) => {
   }
 });
 
+/**
+ * PUT /api/projects/:id
+ * Updates an existing project (e.g., liveUrl, githubUrl, description)
+ */
+router.put('/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const updates = req.body;
+
+    if (mongoose.connection.readyState === 1) {
+      const updated = await Project.findOneAndUpdate(
+        { id },
+        { $set: updates },
+        { new: true }
+      ).lean();
+
+      if (!updated) {
+        return res.status(404).json({ success: false, error: `Project ${id} not found.` });
+      }
+
+      // Sync backup JSON
+      const stored = await getStoredProjects();
+      const idx = stored.findIndex((p) => p.id === id);
+      if (idx !== -1) {
+        stored[idx] = { ...stored[idx], ...updates };
+        await saveProjects(stored);
+      }
+
+      return res.json({
+        success: true,
+        source: 'mongodb',
+        message: `Project ${id} updated successfully.`,
+        data: updated,
+      });
+    }
+
+    // JSON fallback
+    const stored = await getStoredProjects();
+    const idx = stored.findIndex((p) => p.id === id);
+    if (idx === -1) {
+      return res.status(404).json({ success: false, error: `Project ${id} not found.` });
+    }
+
+    stored[idx] = { ...stored[idx], ...updates };
+    await saveProjects(stored);
+
+    return res.json({
+      success: true,
+      source: 'json-fallback',
+      message: `Project ${id} updated successfully.`,
+      data: stored[idx],
+    });
+  } catch (error) {
+    console.error('[PROJECT UPDATE ERROR]', error);
+    return res.status(500).json({
+      success: false,
+      error: 'Failed to update project.',
+    });
+  }
+});
+
 export default router;
