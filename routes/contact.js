@@ -79,7 +79,7 @@ router.post('/', async (req, res) => {
     console.error('[CONTACT ERROR]', error);
     return res.status(500).json({
       success: false,
-      error: 'Internal Server Error: Failed to process dispatch.',
+      error: error.message || 'Internal Server Error: Failed to process dispatch.',
     });
   }
 });
