@@ -1,28 +1,25 @@
 import express from 'express';
-import mongoose from 'mongoose';
-import Experience from '../models/Experience.js';
+import fs from 'fs/promises';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
 const router = express.Router();
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const expFilePath = path.join(__dirname, '../data/experience.json');
 
 router.get('/', async (req, res) => {
   try {
     const { category } = req.query;
+    const raw = await fs.readFile(expFilePath, 'utf-8');
+    let experiences = JSON.parse(raw);
 
-    if (mongoose.connection.readyState !== 1) {
-      return res.status(503).json({
-        success: false,
-        error: 'Database service is currently unavailable.',
-      });
-    }
-
-    const filter = {};
     if (category && category !== 'all') {
-      filter.category = category;
+      experiences = experiences.filter((exp) => exp.category === category);
     }
-    const experiences = await Experience.find(filter).sort({ id: 1 }).lean();
+
     return res.json({
       success: true,
-      source: 'mongodb',
       count: experiences.length,
       data: experiences,
     });
@@ -30,7 +27,7 @@ router.get('/', async (req, res) => {
     console.error('[EXPERIENCE GET ERROR]', error);
     return res.status(500).json({
       success: false,
-      error: 'Failed to retrieve experience logbook from database.',
+      error: 'Failed to retrieve experience logbook.',
     });
   }
 });

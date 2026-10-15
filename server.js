@@ -1,17 +1,12 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
-import mongoose from 'mongoose';
-import connectDB from './config/db.js';
 import contactRouter from './routes/contact.js';
 import projectsRouter from './routes/projects.js';
 import skillsRouter from './routes/skills.js';
 import experienceRouter from './routes/experience.js';
 
 dotenv.config();
-
-// Connect to MongoDB
-connectDB().catch((err) => console.error('[INIT DB NOTICE]', err.message));
 
 const app = express();
 const PORT = process.env.PORT || 5005;
@@ -53,34 +48,15 @@ app.use((req, res, next) => {
   next();
 });
 
-// Ensure MongoDB connection in Serverless environments (cold start resilience)
-app.use(async (req, res, next) => {
-  if (mongoose.connection.readyState !== 1) {
-    try {
-      await connectDB();
-    } catch (_) {}
-  }
-  next();
-});
-
 // ==========================================
 // ROUTES
 // ==========================================
 
 // Health Check (support both /api/health and /health)
 app.get(['/api/health', '/health'], (req, res) => {
-  const dbState = mongoose.connection.readyState;
-  const dbStatus =
-    dbState === 1
-      ? 'MONGODB_CONNECTED'
-      : dbState === 2
-      ? 'MONGODB_CONNECTING'
-      : 'MONGODB_DISCONNECTED';
-
   res.json({
-    status: dbState === 1 ? 'OPERATIONAL' : 'DEGRADED',
-    database: dbStatus,
-    dbHost: mongoose.connection.host || 'local',
+    status: 'OPERATIONAL',
+    mode: 'DIRECT_EMAIL_DISPATCH',
     uptime: Math.floor(process.uptime()),
     timestamp: new Date().toISOString(),
     service: 'Nabeel Ahmed Dhillon — Portfolio Backend',
@@ -104,11 +80,12 @@ app.use('/experience', experienceRouter);
 app.get(['/', '/api'], (req, res) => {
   res.json({
     message: 'NABEEL DHILLON // PORTFOLIO API SERVER',
-    database: mongoose.connection.readyState === 1 ? 'MONGODB_CONNECTED' : 'MONGODB_DISCONNECTED',
+    status: 'OPERATIONAL',
+    mode: 'DIRECT_EMAIL_DISPATCH',
+    receiver: process.env.NOTIFICATION_RECEIVER || 'nabeelprojects@hotmail.com',
     endpoints: {
       health: 'GET /api/health',
       contact: 'POST /api/contact',
-      messages: 'GET /api/contact/messages',
       projects: 'GET /api/projects',
       skills: 'GET /api/skills',
       experience: 'GET /api/experience',
@@ -143,7 +120,6 @@ if (!process.env.VERCEL) {
     console.log(`[SERVER ACTIVE] Running on http://localhost:${PORT}`);
     console.log(`[HEALTH CHECK]  http://localhost:${PORT}/api/health`);
     console.log(`[CLIENT URL]    ${CLIENT_URL}`);
-    console.log(`[MONGODB URI]   ${process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/portfolio'}`);
     console.log('====================================================');
   });
 }
